@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Daniel Kawalsky",
+  "repository": "https://github.com/danksky/crew-rep",
   "license": "ISC",
   "dependencies": {
     "node-fetch": "^2.3.0",
