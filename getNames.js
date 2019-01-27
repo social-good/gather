@@ -31,7 +31,7 @@ function getYearMovies(year) {
 	.then(reponses => {
 	    const movieIDs = [];
 	    reponses.map((pageResults) => {
-	    	for (let i = 0; i < pageResults.length; i++) {
+	    	for (let i = 0; i < pageResults != undefined && pageResults.length; i++) {
 		        movieIDs.push(pageResults[i].id);
 	    	}
 	    });
