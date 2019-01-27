@@ -1,0 +1,15 @@
+{
+  "name": "crew-rep",
+  "version": "1.0.0",
+  "description": "gathers information on crewmembers in movies",
+  "main": "gather.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.3.0",
+    "promise": "^8.0.2"
+  }
+}
