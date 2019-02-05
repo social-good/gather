@@ -15,7 +15,7 @@ function getAllMovieIds(year) {
 		getYearMovies(year).then((ids) => {
 			getAllMovieCrews(0, ids)
 		});
-    	setTimeout(getAllMovieIds, 10000, year-1);
+    	setTimeout(getAllMovieIds, 1000000, year-1);
 	}
 }
 
@@ -31,7 +31,7 @@ function getYearMovies(year) {
 	.then(reponses => {
 	    const movieIDs = [];
 	    reponses.map((pageResults) => {
-	    	for (let i = 0; i < pageResults != undefined && pageResults.length; i++) {
+	    	for (let i = 0; pageResults != undefined && i < pageResults.length; i++) {
 		        movieIDs.push(pageResults[i].id);
 	    	}
 	    });
@@ -48,7 +48,7 @@ function getAllMovieCrews(index, ids) {
 		return false;
 	} else {
 		getMovieCrew(ids[index]);
-    	setTimeout(getAllMovieCrews, 30, index+1, ids);
+    	setTimeout(getAllMovieCrews, 1000, index+1, ids);
 	}
 }
 

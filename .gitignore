@@ -78,3 +78,11 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Project Files
+api_keys/
+tmp/
+
+# Mac OS
+.DS_Store
+
