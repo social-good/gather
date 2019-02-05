@@ -24,7 +24,7 @@ function getTopMovieOfYears(fromYear, toYear) {
 }
 
 function writeToJson(yearMovieIDs) {
-	fs.writeFile(`${__dirname}../tmp/topMovieIDs.json`, JSON.stringify(yearMovieIDs), function(err) {
+	fs.writeFile(`${__dirname}/../tmp/topMovieIDs.json`, JSON.stringify(yearMovieIDs), function(err) {
 		if(err) {
 			return console.log(err);
 		}
