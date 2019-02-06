@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+const api_key = "4ba39d95ffe0232643f0ad3d6b824b30"
 
 function getTopMovieOfYears(fromYear, toYear) {
     const discoverPromises = []
@@ -26,6 +26,7 @@ function getTopMovieOfYears(fromYear, toYear) {
 				var year = fromYear+i
 				await Promise.resolve(getMovieCrew(topMovieID))
 					.then(crew => {
+						// var breakdown = getBreakdown(crew)
 						movieMap[year.toString()] = {tmdb_id: topMovieID, title:topMovieTitle, year: year, crew: crew}; 
 						// console.log(crew)
 					});
@@ -37,6 +38,7 @@ function getTopMovieOfYears(fromYear, toYear) {
 }
 
 function getMovieCrew(id) {
+
 	return fetch(`https://api.themoviedb.org/3/movie/${id}/credits?api_key=${api_key}`)
 		.then(res => res.json())
 		.then(json => json.crew)
@@ -50,7 +52,13 @@ function getMovieCrew(id) {
 		.catch(err => console.error(err));
 }
 
+function getBreakdown(crew) {
+
+	console.log(crew[0])
+}
+
 function writeToJson(yearMovieIDs) {
+
 	fs.writeFile(`${__dirname}/../tmp/topMovieIDs.json`, JSON.stringify(yearMovieIDs), function(err) {
 		if(err) {
 			return console.log(err);
@@ -59,5 +67,26 @@ function writeToJson(yearMovieIDs) {
 	});
 }
 
-getTopMovieOfYears(2008, 2018).then(movieMap => writeToJson(movieMap))
-
+// getTopMovieOfYears(2008, 2018).then(movieMap => writeToJson(movieMap))
+var data = fs.readFileSync(`${__dirname}/../tmp/crew_2008-2017.json`, 'utf8');
+var credits = JSON.parse(data);
+var creditMap = {};
+for (var sequenceIndex = 0; sequenceIndex < credits.length; sequenceIndex++) {
+	var sequence = credits[sequenceIndex]
+	for (var crewmemberIndex = 0; crewmemberIndex < credits[sequenceIndex].length; crewmemberIndex++) {
+		let year = 2008 + sequenceIndex;
+		let name = sequence[crewmemberIndex].name
+		let credit_id = sequence[crewmemberIndex].credit_id
+		let job = sequence[crewmemberIndex].job
+		if (creditMap[year.toString()] != undefined) {
+			if (creditMap[year.toString()][job] != undefined) {
+				creditMap[year.toString()][job] += 1
+			} else {
+				creditMap[year.toString()][job] = 1
+			}
+		} else {
+			creditMap[year.toString()] = {};
+		}
+	}
+}
+console.log(creditMap)
