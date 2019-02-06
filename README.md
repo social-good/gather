@@ -1,5 +1,5 @@
-# crew-rep
-## author: Daniel Kawalsky
+# node-crew
+## authors: Daniel Kawalsky, Jyotsna Pant
 
 This project was begun for **CSCI 499: Computing for Social Good** taught by Professor Barath Raghavan.
 
