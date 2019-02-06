@@ -5,6 +5,9 @@ const weightedRaces = {};
 var yearCrewCount = 0;
 var totalCrewCount = 0;
 
+const api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+const namsor_api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
 function getAllMovieIds(year) {
 	if (year <= 1900) {
 		console.log(totalCrewCount);
@@ -22,7 +25,7 @@ function getAllMovieIds(year) {
 function getYearMovies(year) {
     const apiPromises = [];
 	for (let i = 1; i <= 5; i++) {
-	    apiPromises.push(fetch(`https://api.themoviedb.org/3/discover/movie?api_key=4ba39d95ffe0232643f0ad3d6b824b30&language=en-US&region=US&sort_by=popularity.desc&include_adult=false&include_video=false&page=${i}&year=${year}&with_runtime.gte=40`)
+	    apiPromises.push(fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${api_key}&language=en-US&region=US&sort_by=popularity.desc&include_adult=false&include_video=false&page=${i}&year=${year}&with_runtime.gte=40`)
 	    	.then(res => res.json())
 	    	.then(json => json.results));
 	}
@@ -53,7 +56,7 @@ function getAllMovieCrews(index, ids) {
 }
 
 function getMovieCrew(id) {
-	return fetch(`https://api.themoviedb.org/3/movie/${id}/credits?api_key=4ba39d95ffe0232643f0ad3d6b824b30`)
+	return fetch(`https://api.themoviedb.org/3/movie/${id}/credits?api_key=${api_key}`)
 		.then(res => res.json())
 		.then(json => json.crew)
 		.then(crew => {
@@ -89,7 +92,7 @@ function getRacialEthnicity(names) {
 		headers: {
 			'accept': 'application/json',
 			'Content-Type': 'application/json',
-			'X-API-KEY': 'd3c112a33138a3ffe8e167bd91ab16fb'
+			'X-API-KEY': `${namsor_api_key}`
 		},
 		body: JSON.stringify(data)
 	})
