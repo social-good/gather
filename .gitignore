@@ -81,7 +81,7 @@ typings/
 
 # Project Files
 api_keys/
-tmp/
+tmp/topMovieIDs.json
 
 # Mac OS
 .DS_Store
