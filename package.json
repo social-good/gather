@@ -10,6 +10,7 @@
   "repository": "https://github.com/danksky/crew-rep",
   "license": "ISC",
   "dependencies": {
+    "chart.js": "^2.7.3",
     "node-fetch": "^2.3.0",
     "promise": "^8.0.2"
   }
