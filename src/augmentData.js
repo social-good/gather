@@ -146,6 +146,7 @@ function augmentCreditsDiaspora() {
 		if (credits === undefined || credits === null || credits.cast === null || credits.crew === null) {
 			console.log(`credits null at year ${year}`)
 		} else {
+			let prevYearAdded = added
 			for (let i = 0; i < credits.cast.length; i++) {
 				for (var j = 0; j < suffixes.length; j++) {
 					// If it hasn't already been augmented and if the diaspora set has the name we're looking for
@@ -163,10 +164,14 @@ function augmentCreditsDiaspora() {
 					}
 				}
 			}
+			// if (added - prevYearAdded === 0)
+			// 	console.log(`No augmentations to top movie for year ${year}`)
+			// else 
+			// 	console.log(`${added - prevYearAdded} augmentations out of ${credits.cast.length + credits.crew.length} for year ${year}\t${(added - prevYearAdded)/(credits.cast.length + credits.crew.length)*100}%`)
 		}
 	}
 	console.log(`Augmented ${added} names. Preparing to write file to JSON...`);
-	writeAugmentedMapToJSON()
+	// writeAugmentedMapToJSON()
 }
 function writeAugmentedMapToJSON() {
 	var date = new Date();
