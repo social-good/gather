@@ -83,6 +83,7 @@ typings/
 api_keys/
 tmp/topMovieIDs.json
 tmp/topCenturyMovies.json
+tmp/namsor_output
 
 # Mac OS
 .DS_Store

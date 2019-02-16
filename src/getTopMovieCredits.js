@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const api_key = "4ba39d95ffe0232643f0ad3d6b824b30"
+const api_key = "XXXXXXXX"
 
 var redoMovieYears = new Array(4);
 for (let i = 0; i < 4; i ++) {
