@@ -84,6 +84,7 @@ api_keys/
 tmp/topMovieIDs.json
 tmp/topCenturyMovies.json
 tmp/namsor_output
+tmp/diaspora
 
 # Mac OS
 .DS_Store

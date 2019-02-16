@@ -51,11 +51,11 @@ function getDiaspora(names) {
 				races[raceCode] += 1;
 				weightedRaces[raceCode] += json.personalNames[j].score;
 			}
-			writeToJSON(reformatNamSor(json));
+			writeNamSorToJSON(reformatNamSor(json));
 		})
 		.catch(err => console.error(err));
 }
-function augmentCreditsDiaspora() {
+function beginDiasporaRetrieval() {
 	var year = 1900;
 	for (; year <= 2018 && unaugmentedNames.count < 248; year++) {
 		var credits = creditsMap.byyear[`${year}`]
@@ -82,7 +82,6 @@ function augmentCreditsDiaspora() {
 	} else {
 		console.log(`unaugmentedNames is empty. Don't risk a call!`)
 	}
-
 }
 
 function reformatNamSor(json) {
@@ -118,13 +117,64 @@ function neverSeenBefore(fullName) {
 		return false;
 	return true;
 }
-function writeToJSON(obj) {
+function writeNamSorToJSON(obj) {
 	var date = new Date();
 	fs.writeFile(`${__dirname}/../tmp/namsor_output/namsor_diaspora_${date.getTime()}.json`, JSON.stringify(obj), function(err) {
 		if(err) {
 			return console.log(err);
 		}
 		console.log(`The file was saved to location: ${__dirname}/../tmp/namsor_output/namsor_diaspora_${date.getTime()}.json !`);
+	});
+}
+function augmentCreditsDiaspora() {
+	var suffixes = [];
+	var diritems = fs.readdirSync(`${__dirname}/../tmp/namsor_output`)
+	for (var i = 0; i < diritems.length; i++) {
+		if (diritems[i].substring(0, 16) === 'namsor_diaspora_') {
+			var suffixKey = diritems[i].substring(16);
+			suffixes.push(suffixKey);
+			if (!diasporaMap[suffixKey]) {
+				var diasporaJSON = fs.readFileSync(`${__dirname}/../tmp/namsor_output/${diritems[i]}`);
+				diasporaMap[suffixKey] = JSON.parse(diasporaJSON);
+			}
+		}
+	}
+
+	var added = 0;
+	for (var year in creditsMap.byyear) {
+		var credits = creditsMap.byyear[year];
+		if (credits === undefined || credits === null || credits.cast === null || credits.crew === null) {
+			console.log(`credits null at year ${year}`)
+		} else {
+			for (let i = 0; i < credits.cast.length; i++) {
+				for (var j = 0; j < suffixes.length; j++) {
+					// If it hasn't already been augmented and if the diaspora set has the name we're looking for
+					if (!credits.cast[i].diaspora && diasporaMap[suffixes[j]][getCleanName(credits.cast[i].name)]) {
+						creditsMap.byyear[year].cast[i].diaspora = diasporaMap[suffixes[j]][getCleanName(credits.cast[i].name)]
+						added++;
+					}
+				}
+			}
+			for (let i = 0; i < credits.crew.length; i++) {
+				for (var j = 0; j < suffixes.length; j++) {
+					if (!credits.crew[i].diaspora && diasporaMap[suffixes[j]][getCleanName(credits.crew[i].name)]) {
+						creditsMap.byyear[year].crew[i].diaspora = diasporaMap[suffixes[j]][getCleanName(credits.crew[i].name)]
+						added++;
+					}
+				}
+			}
+		}
+	}
+	console.log(`Augmented ${added} names. Preparing to write file to JSON...`);
+	writeAugmentedMapToJSON()
+}
+function writeAugmentedMapToJSON() {
+	var date = new Date();
+	fs.writeFile(`${__dirname}/../tmp/diaspora/topCenturyMovies_(augmented)_${date.getTime()}.json`, JSON.stringify(creditsMap), function(err) {
+		if(err) {
+			return console.log(err);
+		}
+		console.log(`The file was saved to location: ${__dirname}/../tmp/diaspora/topCenturyMovies_(augmented)_${date.getTime()}.json !`);
 	});
 }
 
@@ -136,4 +186,9 @@ var unaugmentedNames = {
 	count: 0
 };
 
+// beginDiasporaRetrieval()
 augmentCreditsDiaspora()
+
+
+
+
