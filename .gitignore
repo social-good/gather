@@ -85,6 +85,7 @@ tmp/topMovieIDs.json
 tmp/topCenturyMovies.json
 tmp/namsor_output
 tmp/diaspora
+tmp/centuryTopMovieNames.json
 
 # Mac OS
 .DS_Store

@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const api_key = ""
+const api_key = "4ba39d95ffe0232643f0ad3d6b824b30"
 
 var yearCredits = {};
 for (let year = 1900; year <= 2018; year++) {
@@ -10,8 +10,6 @@ for (let year = 1900; year <= 2018; year++) {
 
 // Promise
 function getCreditsOfTopMoviesOfYear(year, page, runtime) {
-	// if (year % 10 === 0) 
-		console.log(`\tRetrieving movies from year ${year}, page ${page}, with runtime ${runtime} minutes...`)
 	const url = `https://api.themoviedb.org/3/discover/movie?api_key=${api_key}&language=en-US&region=US&sort_by=popularity.desc&include_adult=false&include_video=false&page=${page}&year=${year}&with_runtime.gte=${runtime}`
 	return fetch(url).then(res => res.json())
 			.then(async (json) => 
@@ -19,11 +17,11 @@ function getCreditsOfTopMoviesOfYear(year, page, runtime) {
 			{
 				let pageResults = json.results;
 				let pages = json.total_pages;
-				if (page === 1)
-					console.log(`\n${year} --- Found ${json.total_results} total results and ${pages} pages.`);
+				if (page === 1) console.log(`\n${year} --- Found ${json.total_results} total results and ${pages} pages.`);
+				console.log(`\tFetching movies from year ${year}, page ${page}/${pages}, with runtime ${runtime} minutes...`)
 				// If there was no movie returned in the page
 				if (!pageResults || pageResults.length === 0) {
-					console.log(`REDO YEAR: No movies for year ${year} when runtime minimum is set to ${runtime}.`)
+					console.log(`ERROR: No movies gathered year ${year}, page ${page}/${pages}, runtime ${runtime}.`)
 					await sleep(6000);
 					return []; // triggers error ASDF below
 				}
@@ -31,29 +29,27 @@ function getCreditsOfTopMoviesOfYear(year, page, runtime) {
 			})
 			// void
 			.then(async (responsesWithCounts) => {
+				await sleep(6000);
 				let total_counts = 0, total_repeats = 0;
 				if (!responsesWithCounts) {
 					console.log(`-- You got rate limited. --`)
-					await sleep(6000);
 					return;
 				} else if (responsesWithCounts.length === 0) {
 					// ASDF
 					console.log(`-  Nothing to gather from page ${page}.  -`)
-					await sleep(6000);
 					return;
 				}
 				for (let i = 0; responsesWithCounts && i < responsesWithCounts.length; i++) {
+					// TODO: Enter in something here to account for the error?
 					total_counts += responsesWithCounts[i][0];
 					total_repeats += responsesWithCounts[i][1];
 				}
 				console.log(`Gathered (${total_counts} unique people, ${total_repeats} repeats) for page ${page} during year ${year} when runtime minimum is set to ${runtime}. `)
 				console.log(`${year} - ${Object.keys(yearCredits[year.toString()]).length}`);
 				if (continueGatheringNames(year)) {
-					await sleep(6000);
 					return await getCreditsOfTopMoviesOfYear(year, page + 1, runtime);
 				} else {
 					console.log(`${year} satisfied.`)
-					await sleep(6000);
 					return;
 				}
 			})
@@ -105,7 +101,7 @@ function continueGatheringNames(year) {
 */
 
 // void
-function enterMovie(member, year, movieId, isCast) {
+function enterPersonUnderMovie(member, year, movieId, isCast) {
 	if (!movieCredits[year.toString()]) {
 		movieCredits[year.toString()] = {};
 	} else {
@@ -146,20 +142,23 @@ function getCreditsFromResults(pageResults, year) {
 					// console.log(`${json.cast.length} cast and ${json.crew.length} crew found for tmdb_id: '${movieId}'!`)
 					let count = 0, repeat = 0;
 					for (let j = 0; j < json.cast.length && continueGatheringNames(year); j++) {
-						let credit_id = json.cast[j].credit_id
-						if (!yearCredits[year.toString()][credit_id]) {
-							yearCredits[year.toString()][credit_id] = true;
-							enterMovie(json.cast[j], year, movieId, true);
+						let person_id = json.cast[j].id
+						// TODO: (Check first with dev website) Make this about id rather than credit_id. Credits are not people, they're credits. 
+						// move `sleep()` statements away from return cases and further up.
+						// TODO: Email Barath + J with the output of the NamSor API and email NamSor asking about the `score`
+						if (!yearCredits[year.toString()][person_id]) {
+							yearCredits[year.toString()][person_id] = true;
+							enterPersonUnderMovie(json.cast[j], year, movieId, true);
 							count++;
 						} else {
 							repeat++;
 						}
 					}
 					for (let j = 0; j < json.crew.length && continueGatheringNames(year); j++) {
-						let credit_id = json.crew[j].credit_id
-						if (!yearCredits[year.toString()][credit_id]) {
-							yearCredits[year.toString()][credit_id] = true;
-							enterMovie(json.crew[j], year, movieId, false);
+						let person_id = json.crew[j].id
+						if (!yearCredits[year.toString()][person_id]) {
+							yearCredits[year.toString()][person_id] = true;
+							enterPersonUnderMovie(json.crew[j], year, movieId, false);
 							count++;
 						} else {
 							repeat++;
@@ -169,7 +168,7 @@ function getCreditsFromResults(pageResults, year) {
 					return [count,repeat];
 				}
 			})
-			.catch(err => console.log(err)));
+			.catch(err => console.log(`ERROR fetching credits ${err}`)));
 
 	}
 	return Promise.all(creditFetchPromises)
@@ -177,17 +176,6 @@ function getCreditsFromResults(pageResults, year) {
 
 // void
 async function getAllCredits(fromYear, toYear) {
-	// if (fromYear > toYear) {
-	// 	setTimeout(writeToJSON, 2000, movieCredits);
-	// } else {
-	// 	if (fromYear <= 1915)
-	// 		getCreditsOfTopMoviesOfYear(fromYear, 1, 0);
-	// 	else
-	// 		getCreditsOfTopMoviesOfYear(fromYear, 1, 40);
-	// 	// setTimeout(getAllCredits, 20000, fromYear+1, toYear);
-	// }
-
-
 	for (var year = fromYear; year <= toYear; year++) {
 		if (fromYear <= 1915)
 			await getCreditsOfTopMoviesOfYear(year, 1, 0);
@@ -199,6 +187,8 @@ async function getAllCredits(fromYear, toYear) {
 
 // void
 function writeToJSON(movieCredits) {
+	// TODO: Remove this. 
+	console.log(movieCredits);
 	fs.writeFile(`${__dirname}/../tmp/centuryTopMovieNames.json`, JSON.stringify(movieCredits), function(err) {
 		if(err) {
 			return console.log(err);
