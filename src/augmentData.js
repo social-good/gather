@@ -1,7 +1,22 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const namsor_api_key = 'XXXXXXXXXXXXXXXXXXXXXXXXXXX';
+const namsor_api_key = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+const hellomoto = [
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX']
+var helloMotoIndex = 2;
 
 const races = {};
 const weightedRaces = {};
@@ -31,54 +46,89 @@ function getDiaspora(names) {
 	for (let i = 0; i < names.length; i++) {
 		data.personalNames.push(convertName(i, names[i]));
 	}
+	console.log()
 	return fetch('https://v2.namsor.com/NamSorAPIv2/api2/json/diasporaBatch', {
 		method: 'POST',
 		headers: {
 			'accept': 'application/json',
 			'Content-Type': 'application/json',
-			'X-API-KEY': `${namsor_api_key}`
+			'X-API-KEY': `${XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}`
 		},
 		body: JSON.stringify(data)
 	})
 		.then(res => res.json())
-		.then(json => {
-			for (let j = 0; j < json.personalNames.length; j++) {
-				raceCode = json.personalNames[j].raceEthnicity;
-				if (races[raceCode] == undefined) {
-					races[raceCode] = 0;
-					weightedRaces[raceCode] = 0;
-				}
-				races[raceCode] += 1;
-				weightedRaces[raceCode] += json.personalNames[j].score;
-			}
+		.then(async (json) => {
+			// for (let j = 0; j < json.personalNames.length; j++) {
+			// 	raceCode = json.personalNames[j].raceEthnicity;
+			// 	if (races[raceCode] == undefined) {
+			// 		races[raceCode] = 0;
+			// 		weightedRaces[raceCode] = 0;
+			// 	}
+			// 	races[raceCode] += 1;
+			// 	weightedRaces[raceCode] += json.personalNames[j].score;
+			// }
 			writeNamSorToJSON(reformatNamSor(json));
+			await (sleep(5000));
+			beginDiasporaRetrieval();
 		})
-		.catch(err => console.error(err));
+		.catch(async (err) => {
+			if (err.message === 'invalid json response body at https://v2.namsor.com/NamSorAPIv2/api2/json/diasporaBatch reason: Unexpected token A in JSON at position 0'){
+				console.log('RECEIVED ERROR (API KEY PROBABLY USED UP)');
+				// Not to worry, onto the next API key!
+				currentKeyIndex++;
+				var wait = parseInt(Math.random() * 60000);
+				console.log(`Waiting for ${wait} ms until trying next API key: ${namsor_api_keys_list[currentKeyIndex]}`);
+				await(sleep(wait));
+				beginDiasporaRetrieval();
+			} else {
+				console.error(err); 
+			}
+		});
+}
+// Promise
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 function beginDiasporaRetrieval() {
+	const batchSize = 248;
 	var year = 1900;
-	for (; year <= 2018 && unaugmentedNames.count < 248; year++) {
-		var credits = creditsMap.byyear[`${year}`]
-		if (credits === undefined || credits === null || credits.cast === null || credits.crew === null) {
-
+	unaugmentedNames = {
+		count: 0
+	};
+	for (; year <= 2018 && unaugmentedNames.count < batchSize; year++) { // TODO: Change this back if all 500 don't come back. 
+		if (year % 10 === 0) console.log(year)
+		var yearCredits = creditsMap[`${year}`]
+		if (yearCredits === undefined || yearCredits === null || Object.keys(yearCredits).length === 0) {
+			console.log('Error')
 		} else {
-			for (let i = 0; i < credits.cast.length && unaugmentedNames.count < 248; i++) {
-				if (neverSeenBefore(getCleanName(credits.cast[i].name))) // only check this map because haven't seen names before because this is the first batch 
-				{	unaugmentedNames[getCleanName(credits.cast[i].name)] = true;
-					unaugmentedNames.count += 1;
+			var yearMovieIds = Object.keys(yearCredits);
+			for (var j = 0; j < yearMovieIds.length; j++) {
+				var yearMovieCredits = yearCredits[yearMovieIds[j]];
+				var yearMovieCreditsCastIds = Object.keys(yearMovieCredits.cast)
+				var yearMovieCreditsCrewIds = Object.keys(yearMovieCredits.crew)
+				for (var k = 0; k < yearMovieCreditsCastIds.length && unaugmentedNames.count < batchSize; k++) {
+					var name = yearMovieCredits.cast[yearMovieCreditsCastIds[k]].name;
+					if (neverSeenBefore(getCleanName(name)) && legitName(getCleanName(name)))
+					{	unaugmentedNames[getCleanName(yearMovieCredits.cast[yearMovieCreditsCastIds[k]].name)] = true;
+						unaugmentedNames.count += 1;
+					}
 				}
-			}
-			for (let i = 0; i < credits.crew.length && unaugmentedNames.count < 248; i++) {
-				if (neverSeenBefore(getCleanName(credits.crew[i].name))) {
-					unaugmentedNames[getCleanName(credits.crew[i].name)] = true;
-					unaugmentedNames.count += 1;
+				for (var k = 0; k < yearMovieCreditsCrewIds.length && unaugmentedNames.count < batchSize; k++) {
+					var name = yearMovieCredits.crew[yearMovieCreditsCrewIds[k]].name;
+					if (neverSeenBefore(getCleanName(name)) && legitName(getCleanName(name)))
+					{	unaugmentedNames[getCleanName(yearMovieCredits.crew[yearMovieCreditsCrewIds[k]].name)] = true;
+						unaugmentedNames.count += 1;
+					}
 				}
 			}
 		}
 	}
 	if (unaugmentedNames.count > 0) {
-		delete(unaugmentedNames.count)
-		getDiaspora(Object.keys(unaugmentedNames))
+		console.log('Unique names remaining: ' + unaugmentedNames.count);
+		console.log('Seen before: ' + seenBefore);
+		seenBefore = 0;
+		delete(unaugmentedNames.count);
+		getDiaspora(Object.keys(unaugmentedNames));
 	} else {
 		console.log(`unaugmentedNames is empty. Don't risk a call!`)
 	}
@@ -94,6 +144,7 @@ function reformatNamSor(json) {
 
 function neverSeenBefore(fullName) {
 	// first import/load anything that hasn't been loaded before
+	
 	var suffixes = [];
 	var diritems = fs.readdirSync(`${__dirname}/../tmp/namsor_output`)
 	for (var i = 0; i < diritems.length; i++) {
@@ -102,11 +153,15 @@ function neverSeenBefore(fullName) {
 			suffixes.push(suffixKey);
 			if (!diasporaMap[suffixKey]) {
 				var diasporaJSON = fs.readFileSync(`${__dirname}/../tmp/namsor_output/${diritems[i]}`);
-				diasporaMap[suffixKey] = JSON.parse(diasporaJSON);
+				try {
+					diasporaMap[suffixKey] = JSON.parse(diasporaJSON);
+				} catch (err) {
+					console.log(`Suffix index = ${i} = '${suffixKey}'`)
+					console.log(err)
+				}
 			}
 		}
 	}
-
 	// then check against all resources/maps to make sure there's nothing left. 
 	for (var i = 0; i < suffixes.length; i++) {
 		if (diasporaMap[suffixes[i]][fullName]) {
@@ -115,8 +170,26 @@ function neverSeenBefore(fullName) {
 	}
 	if (unaugmentedNames[fullName])
 		return false;
+	seenBefore++;
+	return true;
+	
+}
+function legitName(fullName) {
+	let names = fullName.split(' ');
+	if (names[0].length <= 1 ||
+		names[1].length <= 1 ||
+		names[0] === 'miss' ||
+		names[0] === 'mrs' ||
+		names[0] === 'ms' ||
+		names[0] === 'mr' ||
+		names[0] === 'hh' ||
+		names[0] === 'dj' ||
+		names[0] === 'rj' ||
+		names[1] === 'ii' ||
+		false) return false;
 	return true;
 }
+
 function writeNamSorToJSON(obj) {
 	var date = new Date();
 	fs.writeFile(`${__dirname}/../tmp/namsor_output/namsor_diaspora_${date.getTime()}.json`, JSON.stringify(obj), function(err) {
@@ -183,16 +256,17 @@ function writeAugmentedMapToJSON() {
 	});
 }
 
-var creditsJSON = fs.readFileSync(`${__dirname}/../tmp/topCenturyMovies.json`);
+var creditsJSON = fs.readFileSync(`${__dirname}/../tmp/centuryTopMovieNames.json`);
 var creditsMap = JSON.parse(creditsJSON);
 
-var diasporaMap = {}
+var diasporaMap = {};
 var unaugmentedNames = {
 	count: 0
 };
+var seenBefore = 0;
 
-// beginDiasporaRetrieval()
-augmentCreditsDiaspora()
+beginDiasporaRetrieval()
+// augmentCreditsDiaspora()
 
 
 

@@ -1,27 +1,30 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const api_key = "4ba39d95ffe0232643f0ad3d6b824b30"
+const api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 var yearCredits = {};
 for (let year = 1900; year <= 2018; year++) {
 	yearCredits[`${year}`] = {};
 }
 
+
+// TODO: Clean up the random sleeps in this. 
 // Promise
 function getCreditsOfTopMoviesOfYear(year, page, runtime) {
 	const url = `https://api.themoviedb.org/3/discover/movie?api_key=${api_key}&language=en-US&region=US&sort_by=popularity.desc&include_adult=false&include_video=false&page=${page}&year=${year}&with_runtime.gte=${runtime}`
+	var total_pages = 0;
 	return fetch(url).then(res => res.json())
 			.then(async (json) => 
 			// response[]
 			{
 				let pageResults = json.results;
-				let pages = json.total_pages;
-				if (page === 1) console.log(`\n${year} --- Found ${json.total_results} total results and ${pages} pages.`);
-				console.log(`\tFetching movies from year ${year}, page ${page}/${pages}, with runtime ${runtime} minutes...`)
+				total_pages = json.total_pages;
+				if (page === 1) console.log(`\n${year} --- Found ${json.total_results} total results and ${total_pages} pages.`);
+				console.log(`\tFetching movies from year ${year}, page ${page}/${total_pages}, with runtime ${runtime} minutes...`)
 				// If there was no movie returned in the page
 				if (!pageResults || pageResults.length === 0) {
-					console.log(`ERROR: No movies gathered year ${year}, page ${page}/${pages}, runtime ${runtime}.`)
+					console.log(`ERROR: No movies gathered year ${year}, page ${page}/${total_pages}, runtime ${runtime}.`)
 					await sleep(6000);
 					return []; // triggers error ASDF below
 				}
@@ -47,7 +50,12 @@ function getCreditsOfTopMoviesOfYear(year, page, runtime) {
 				console.log(`Gathered (${total_counts} unique people, ${total_repeats} repeats) for page ${page} during year ${year} when runtime minimum is set to ${runtime}. `)
 				console.log(`${year} - ${Object.keys(yearCredits[year.toString()]).length}`);
 				if (continueGatheringNames(year)) {
-					return await getCreditsOfTopMoviesOfYear(year, page + 1, runtime);
+					if (page === total_pages){
+						console.log(`${year} unsatisfied.`);
+						return;
+					} else {
+						return await getCreditsOfTopMoviesOfYear(year, page + 1, runtime);
+					}
 				} else {
 					console.log(`${year} satisfied.`)
 					return;
