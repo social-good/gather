@@ -2,21 +2,8 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 
 const namsor_api_key = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-const hellomoto = [
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-	'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX']
-var helloMotoIndex = 2;
+
+var currentKeyIndex = 0;
 
 const races = {};
 const weightedRaces = {};
@@ -52,7 +39,7 @@ function getDiaspora(names) {
 		headers: {
 			'accept': 'application/json',
 			'Content-Type': 'application/json',
-			'X-API-KEY': `${XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}`
+			'X-API-KEY': `${namsor_api_key}`
 		},
 		body: JSON.stringify(data)
 	})
@@ -77,7 +64,7 @@ function getDiaspora(names) {
 				// Not to worry, onto the next API key!
 				currentKeyIndex++;
 				var wait = parseInt(Math.random() * 60000);
-				console.log(`Waiting for ${wait} ms until trying next API key: ${namsor_api_keys_list[currentKeyIndex]}`);
+				console.log(`Waiting for ${wait} ms until trying next API key: ${namsor_api_key}`);
 				await(sleep(wait));
 				beginDiasporaRetrieval();
 			} else {
@@ -90,7 +77,7 @@ function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 function beginDiasporaRetrieval() {
-	const batchSize = 248;
+	const batchSize = 5000000;
 	var year = 1900;
 	unaugmentedNames = {
 		count: 0
@@ -124,11 +111,12 @@ function beginDiasporaRetrieval() {
 		}
 	}
 	if (unaugmentedNames.count > 0) {
-		console.log('Unique names remaining: ' + unaugmentedNames.count);
+		// console.log(unaugmentedNames.count)
 		console.log('Seen before: ' + seenBefore);
 		seenBefore = 0;
 		delete(unaugmentedNames.count);
-		getDiaspora(Object.keys(unaugmentedNames));
+		// getDiaspora(Object.keys(unaugmentedNames));
+		// https://sjfox.github.io/post/world_map_flights/
 	} else {
 		console.log(`unaugmentedNames is empty. Don't risk a call!`)
 	}
@@ -165,14 +153,15 @@ function neverSeenBefore(fullName) {
 	// then check against all resources/maps to make sure there's nothing left. 
 	for (var i = 0; i < suffixes.length; i++) {
 		if (diasporaMap[suffixes[i]][fullName]) {
+			seenBefore++;
 			return false;
 		}
 	}
-	if (unaugmentedNames[fullName])
+	if (unaugmentedNames[fullName]) {
+		seenBefore++;
 		return false;
-	seenBefore++;
+	}
 	return true;
-	
 }
 function legitName(fullName) {
 	let names = fullName.split(' ');
@@ -214,37 +203,42 @@ function augmentCreditsDiaspora() {
 	}
 
 	var added = 0;
-	for (var year in creditsMap.byyear) {
-		var credits = creditsMap.byyear[year];
-		if (credits === undefined || credits === null || credits.cast === null || credits.crew === null) {
-			console.log(`credits null at year ${year}`)
+	for (var year = 1900; year <= 2018; year++) { // TODO: Change this back if all 500 don't come back. 
+		if (year % 10 === 0) console.log(year)
+		var yearCredits = creditsMap[`${year}`]
+		if (yearCredits === undefined || yearCredits === null || Object.keys(yearCredits).length === 0) {
+			console.log('Error')
 		} else {
-			let prevYearAdded = added
-			for (let i = 0; i < credits.cast.length; i++) {
-				for (var j = 0; j < suffixes.length; j++) {
-					// If it hasn't already been augmented and if the diaspora set has the name we're looking for
-					if (!credits.cast[i].diaspora && diasporaMap[suffixes[j]][getCleanName(credits.cast[i].name)]) {
-						creditsMap.byyear[year].cast[i].diaspora = diasporaMap[suffixes[j]][getCleanName(credits.cast[i].name)]
-						added++;
+			let prevYearAdded = added;
+			var yearMovieIds = Object.keys(yearCredits);
+			for (var j = 0; j < yearMovieIds.length; j++) {
+				var yearMovieCredits = yearCredits[yearMovieIds[j]];
+				var yearMovieCreditsCastIds = Object.keys(yearMovieCredits.cast)
+				var yearMovieCreditsCrewIds = Object.keys(yearMovieCredits.crew)
+				for (var k = 0; k < yearMovieCreditsCastIds.length; k++) {
+					var person = yearMovieCredits.cast[yearMovieCreditsCastIds[k]];
+					for (var l = 0; l < suffixes.length; l++) {
+						if (!person.diaspora && diasporaMap[suffixes[l]][getCleanName(person.name)] && legitName(getCleanName(person.name))) {
+							creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(person.name)];
+							added++;
+						}
+					}
+				}
+				for (var k = 0; k < yearMovieCreditsCrewIds.length; k++) {
+					var person = yearMovieCredits.crew[yearMovieCreditsCrewIds[k]];
+					for (var l = 0; l < suffixes.length; l++) {
+						if (!person.diaspora && diasporaMap[suffixes[l]][getCleanName(person.name)] && legitName(getCleanName(person.name))) {
+							creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(person.name)];
+							added++;
+						}
 					}
 				}
 			}
-			for (let i = 0; i < credits.crew.length; i++) {
-				for (var j = 0; j < suffixes.length; j++) {
-					if (!credits.crew[i].diaspora && diasporaMap[suffixes[j]][getCleanName(credits.crew[i].name)]) {
-						creditsMap.byyear[year].crew[i].diaspora = diasporaMap[suffixes[j]][getCleanName(credits.crew[i].name)]
-						added++;
-					}
-				}
-			}
-			// if (added - prevYearAdded === 0)
-			// 	console.log(`No augmentations to top movie for year ${year}`)
-			// else 
-			// 	console.log(`${added - prevYearAdded} augmentations out of ${credits.cast.length + credits.crew.length} for year ${year}\t${(added - prevYearAdded)/(credits.cast.length + credits.crew.length)*100}%`)
 		}
 	}
+
 	console.log(`Augmented ${added} names. Preparing to write file to JSON...`);
-	// writeAugmentedMapToJSON()
+	writeAugmentedMapToJSON()
 }
 function writeAugmentedMapToJSON() {
 	var date = new Date();
@@ -265,8 +259,8 @@ var unaugmentedNames = {
 };
 var seenBefore = 0;
 
-beginDiasporaRetrieval()
-// augmentCreditsDiaspora()
+// beginDiasporaRetrieval()
+augmentCreditsDiaspora()
 
 
 
