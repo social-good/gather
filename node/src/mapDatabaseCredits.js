@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const api_key = "4ba39d95ffe0232643f0ad3d6b824b30"
+const api_key = "XXXXX"
 const fs = require('fs');
 
 function grabTMDB_IDs() {
@@ -47,7 +47,7 @@ async function mapAllIds() {
 	const failures = {};
 	const duplicates = {};
 	// batches are largely symbolic. 
-	for (var batch_start = 0; batch_start < 1200; batch_start += 40) {
+	for (var batch_start = 0; batch_start < tmdb_ids.length; batch_start += 40) {
 		if (batch_start % 250 < 40) console.log(`(${batch_start}/${tmdb_ids.length}) = ${parseInt(batch_start/tmdb_ids.length*10000)/100} %\nFailures: ${Object.keys(failures).length},\tDuplicates: ${Object.keys(duplicates).length}`)
 		var batch = tmdb_ids.slice(batch_start, (batch_start + 40 <= tmdb_ids.length) ? batch_start + 40 : tmdb_ids.length % 40);
 		for (var batch_request = 0; batch_request < batch.length; batch_request++) {
@@ -69,12 +69,13 @@ async function mapAllIds() {
 		}
 	}
 	writeToJSON(id_map)
+	await sleep(10000)
+	console.log(`==================\nComplete:\nConverted ${Object.keys(id_map).length} tmdb_id's out of ${tmdb_ids.length} total.\nFailures: ${Object.keys(failures).length},\tDuplicates: ${Object.keys(duplicates).length}\n==================`)
 }
 
 // void
 function writeToJSON(id_map) {
-	// TODO: Remove this. 
-	console.log(movieCredits);
+	console.log(`Writing all credits. Please wait a few seconds.`)
 	fs.writeFile(`${__dirname}/../tmp/tmdb_imdb_mapping.json`, JSON.stringify(id_map), function(err) {
 		if(err) {
 			return console.log(err);
