@@ -44,6 +44,7 @@ function sleep(ms) {
 async function mapAllIds() {
 	var id_map = {};
 	const tmdb_ids = grabTMDB_IDs();
+	const no_mapping = {};
 	const failures = {};
 	const duplicates = {};
 	// batches are largely symbolic. 
@@ -52,11 +53,14 @@ async function mapAllIds() {
 		var batch = tmdb_ids.slice(batch_start, (batch_start + 40 <= tmdb_ids.length) ? batch_start + 40 : tmdb_ids.length % 40);
 		for (var batch_request = 0; batch_request < batch.length; batch_request++) {
 			var person_index = batch_start + batch_request;
-			fetch(`https://api.themoviedb.org/3/person/${tmdb_ids[person_index]}?api_key=${api_key}&language=en-US`)
+			await fetch(`https://api.themoviedb.org/3/person/${tmdb_ids[person_index]}?api_key=${api_key}&language=en-US`)
 				.then(res => res.json())
 				.then(json => {
-					if (!id_map[json.imdb_id]) {
-						id_map[tmdb_ids[person_index]] = json.imdb_id;
+					if (!id_map[tmdb_ids[person_index]]) {
+						if (!json.imdb_id || json.imdb_id === "")
+							no_mapping[tmdb_ids[person_index]] = true;
+						else 
+							id_map[tmdb_ids[person_index]] = json.imdb_id;
 					} else {
 						duplicates[tmdb_ids[person_index]] = (duplicates[tmdb_ids[person_index]] ? duplicates[tmdb_ids[person_index]] + 1 : 1);
 					}
@@ -65,12 +69,16 @@ async function mapAllIds() {
 					console.error(err) // DEBUG
 					failures[tmdb_ids[person_index]] = (failures[tmdb_ids[person_index]] ? failures[tmdb_ids[person_index]] + 1 : 1);
 				});
-			await sleep(275)
+			await sleep(260)
 		}
 	}
+	// TODO: Store the ones that didn't make the cut. 
 	writeToJSON(id_map)
 	await sleep(10000)
-	console.log(`==================\nComplete:\nConverted ${Object.keys(id_map).length} tmdb_id's out of ${tmdb_ids.length} total.\nFailures: ${Object.keys(failures).length},\tDuplicates: ${Object.keys(duplicates).length}\n==================`)
+	console.log(`==================
+		\nComplete:\nConverted ${Object.keys(id_map).length} tmdb_id's out of ${tmdb_ids.length} total.
+		\nFailures: ${Object.keys(failures).length},\tDuplicates: ${Object.keys(duplicates).length},\tNo mapping: ${Object.keys(no_mapping).length}
+		\n==================`)
 }
 
 // void
@@ -84,6 +92,7 @@ function writeToJSON(id_map) {
 	});
 }
 
-mapAllIds();
+// NOTE: without cleaning, we have 9353 unmapped TMDB_IDS
 
+// mapAllIds();
 
