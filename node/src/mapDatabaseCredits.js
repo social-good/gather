@@ -48,29 +48,25 @@ async function mapAllIds() {
 	const failures = {};
 	const duplicates = {};
 	// batches are largely symbolic. 
-	for (var batch_start = 0; batch_start < tmdb_ids.length; batch_start += 40) {
-		if (batch_start % 250 < 40) console.log(`(${batch_start}/${tmdb_ids.length}) = ${parseInt(batch_start/tmdb_ids.length*10000)/100} %\nFailures: ${Object.keys(failures).length},\tDuplicates: ${Object.keys(duplicates).length}`)
-		var batch = tmdb_ids.slice(batch_start, (batch_start + 40 <= tmdb_ids.length) ? batch_start + 40 : tmdb_ids.length % 40);
-		for (var batch_request = 0; batch_request < batch.length; batch_request++) {
-			var person_index = batch_start + batch_request;
-			await fetch(`https://api.themoviedb.org/3/person/${tmdb_ids[person_index]}?api_key=${api_key}&language=en-US`)
-				.then(res => res.json())
-				.then(json => {
-					if (!id_map[tmdb_ids[person_index]]) {
-						if (!json.imdb_id || json.imdb_id === "")
-							no_mapping[tmdb_ids[person_index]] = true;
-						else 
-							id_map[tmdb_ids[person_index]] = json.imdb_id;
-					} else {
-						duplicates[tmdb_ids[person_index]] = (duplicates[tmdb_ids[person_index]] ? duplicates[tmdb_ids[person_index]] + 1 : 1);
-					}
-				})
-				.catch(err => {
-					console.error(err) // DEBUG
-					failures[tmdb_ids[person_index]] = (failures[tmdb_ids[person_index]] ? failures[tmdb_ids[person_index]] + 1 : 1);
-				});
-			await sleep(260)
-		}
+	for (var person_index = 0; person_index < tmdb_ids.length; person_index ++) {
+		if (person_index % 250 === 0) console.log(`(${person_index}/${tmdb_ids.length}) = ${parseInt(person_index/tmdb_ids.length*10000)/100} %\nFailures: ${Object.keys(failures).length},\tDuplicates: ${Object.keys(duplicates).length}`)
+		await fetch(`https://api.themoviedb.org/3/person/${tmdb_ids[person_index]}?api_key=${api_key}&language=en-US`)
+			.then(res => res.json())
+			.then(json => {
+				if (!id_map[tmdb_ids[person_index]]) {
+					if (!json.imdb_id || json.imdb_id === "")
+						no_mapping[tmdb_ids[person_index]] = true;
+					else 
+						id_map[tmdb_ids[person_index]] = json.imdb_id;
+				} else {
+					duplicates[tmdb_ids[person_index]] = (duplicates[tmdb_ids[person_index]] ? duplicates[tmdb_ids[person_index]] + 1 : 1);
+				}
+			})
+			.catch(err => {
+				console.error(err) // DEBUG
+				failures[tmdb_ids[person_index]] = (failures[tmdb_ids[person_index]] ? failures[tmdb_ids[person_index]] + 1 : 1);
+			});
+		await sleep(260);
 	}
 	// TODO: Store the ones that didn't make the cut. 
 	writeToJSON(id_map)
@@ -94,5 +90,5 @@ function writeToJSON(id_map) {
 
 // NOTE: without cleaning, we have 9353 unmapped TMDB_IDS
 
-// mapAllIds();
+mapAllIds();
 

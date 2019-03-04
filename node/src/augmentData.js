@@ -17,6 +17,10 @@ function getCleanName(fullName) {
 	let names = fullName.split(' ');
 	return `${names[0].toLowerCase().replaceAll('[.´·-]*', '')} ${names[names.length-1].toLowerCase().replaceAll('[.´·-]*', '')}`
 }
+function oldGetCleanName(fullName) {
+	let names = fullName.split(' ');
+	return `${names[0].toLowerCase().replaceAll('[^A-Za-z]', '')} ${names[names.length-1].toLowerCase().replaceAll('[^A-Za-z]', '')}`
+}
 function convertName(index, fullName) {
 	let names = fullName.split(' ')
 	let obj = {
@@ -77,8 +81,8 @@ function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 function beginDiasporaRetrieval() {
-	const batchSize = 50000000;
-	var year = 1900;
+	// const batchSize = 50000000;
+	// var year = 1900;
 	unaugmentedNames = {
 		count: 0
 	};
@@ -211,6 +215,9 @@ function augmentCreditsDiaspora() {
 		}
 	}
 
+	// Q: Is the name that I found an old or a new name?
+	// A: It's old if its
+
 	var added = 0;
 	for (var year = 1900; year <= 2018; year++) { // TODO: Change this back if all 500 don't come back. 
 		if (year % 10 === 0) console.log(year)
@@ -227,18 +234,38 @@ function augmentCreditsDiaspora() {
 				for (var k = 0; k < yearMovieCreditsCastIds.length; k++) {
 					var person = yearMovieCredits.cast[yearMovieCreditsCastIds[k]];
 					for (var l = 0; l < suffixes.length; l++) {
-						if (!person.diaspora && diasporaMap[suffixes[l]][getCleanName(person.name)] && legitName(getCleanName(person.name))) {
-							creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(person.name)];
-							added++;
+						if (changed_birth_names[person.id]) {
+							if (!person.previous_diaspora && 
+								!person.birth_name &&
+								!person.imdb_name &&
+								diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])] || 
+								diasporaMap[suffixes[l]][oldGetCleanName(changed_birth_names[person.id])]) {
+							
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].birth_name = changed_birth_names[person.id];
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].imdb_name = changed_birth_names_changed[person.id];
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].previous_diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])];
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names_changed[person.id])];
+								added++;
+							}
 						}
 					}
 				}
 				for (var k = 0; k < yearMovieCreditsCrewIds.length; k++) {
 					var person = yearMovieCredits.crew[yearMovieCreditsCrewIds[k]];
 					for (var l = 0; l < suffixes.length; l++) {
-						if (!person.diaspora && diasporaMap[suffixes[l]][getCleanName(person.name)] && legitName(getCleanName(person.name))) {
-							creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(person.name)];
-							added++;
+						if (changed_birth_names[person.id]) {
+							if (!person.previous_diaspora && 
+								!person.birth_name &&
+								!person.imdb_name &&
+								diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])] || 
+								diasporaMap[suffixes[l]][oldGetCleanName(changed_birth_names[person.id])]) {
+
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].birth_name = changed_birth_names[person.id];
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].imdb_name = changed_birth_names_changed[person.id];
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].previous_diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])];
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names_changed[person.id])];
+								added++;
+							}
 						}
 					}
 				}
@@ -251,19 +278,22 @@ function augmentCreditsDiaspora() {
 }
 function writeAugmentedMapToJSON() {
 	var date = new Date();
-	fs.writeFile(`${__dirname}/../tmp/diaspora/topCenturyMovies_(augmented)_${date.getTime()}.json`, JSON.stringify(creditsMap), function(err) {
+	fs.writeFile(`${__dirname}/../tmp/diaspora/topCenturyMovies_(double_augmented)_${date.getTime()}.json`, JSON.stringify(creditsMap), function(err) {
 		if(err) {
 			return console.log(err);
 		}
-		console.log(`The file was saved to location: ${__dirname}/../tmp/diaspora/topCenturyMovies_(augmented)_${date.getTime()}.json !`);
+		console.log(`The file was saved to location: ${__dirname}/../tmp/diaspora/topCenturyMovies_(double_augmented)_${date.getTime()}.json !`);
 	});
 }
 
 var creditsJSON = fs.readFileSync(`${__dirname}/../tmp/centuryTopMovieNames.json`);
 var creditsMap = JSON.parse(creditsJSON);
 
-var changed_birth_names_JSON = fs.readFileSync(`${__dirname}/../tmp/changed_birth_names_changed.json`);
+var changed_birth_names_JSON = fs.readFileSync(`${__dirname}/../tmp/changed_birth_names.json`);
 var changed_birth_names = JSON.parse(changed_birth_names_JSON);
+
+var changed_birth_names_changed_JSON = fs.readFileSync(`${__dirname}/../tmp/changed_birth_names_changed.json`);
+var changed_birth_names_changed = JSON.parse(changed_birth_names_changed_JSON);
 
 var diasporaMap = {};
 var unaugmentedNames = {
@@ -271,8 +301,8 @@ var unaugmentedNames = {
 };
 var seenBefore = 0;
 
-beginDiasporaRetrieval()
-// augmentCreditsDiaspora()
+// beginDiasporaRetrieval()
+augmentCreditsDiaspora()
 
 
 
