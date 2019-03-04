@@ -38,7 +38,7 @@ function writeToJSON(names_data) {
 
 var approved = [];
 var nicksDictionary = {};
-function doThings() {
+function extractNameChanges() {
 	var personJSON = fs.readFileSync(`${__dirname}/../tmp/names_data.json`);
 	var persons = JSON.parse(personJSON);
 	var personIds = Object.keys(persons);
@@ -99,9 +99,6 @@ function usable(birth_name, imdb_name, person) {
 	bNames = cleanNameArray(bNames);
 	cNames = cleanNameArray(cNames);
 
-	// console.log(bNames);
-	// console.log(cNames);
-
 	// It's the exact same!
 	if (bNames[0] === cNames[0] && bNames[bNames.length-1] === cNames[cNames.length-1])
 		return false;
@@ -113,11 +110,6 @@ function usable(birth_name, imdb_name, person) {
 			rejects.notfound.push([birth_name,imdb_name]);
 			return false;
 		}
-		// TODO: Dropping the accent. "birth_name":"NÈstor GastÛn Carbonell","imdb_name":"Nestor Carbonell"
-		// Going by middle name? √ SAFE! (Going by any other given name? √ SAFE!)
-		// TODO: UHHH married? {"birth_name":"Christiane Susanne Harlan","imdb_name":"Christiane Kubrick"} 
-			// If only their last name is changed, check to make sure their spouse doesn't have the same name. 
-		// TODO: Titles: "birth_name":"Princess Gayane Mickeladze","imdb_name":"Miki Iveria" (Honorifics) https://github.com/dariusk/corpora/blob/master/data/humans/englishHonorifics.json
 
 		// Married
 		// (Her) first name is the same even after the name change. 
@@ -125,7 +117,7 @@ function usable(birth_name, imdb_name, person) {
 			var spouse_names = cleanNameArray(person.spouse_name.split(' '));
 			// She has the same last name as their spouse.
 			if (cNames[cNames.length-1] === spouse_names[spouse_names.length-1]) {
-				// Just circumventing problem in the data where sometimes the spouse has the exact same name as the person. 
+				// Just circumventing problem in the data where sometimes the spouse has the exact same name as themself
 				if (cNames[0] !== spouse_names[0]) {
 					// She just changed her name because she got married.
 					rejects.married.push([birth_name,imdb_name,person.spouse_name]);
@@ -153,8 +145,8 @@ function usable(birth_name, imdb_name, person) {
 	approved.push({birth_name: birth_name, imdb_name: imdb_name});
 	return true;
 }
-// console.log('Willïám'.latinize().toLowerCase())
 
+// console.log('Willïám'.latinize().toLowerCase())
 // console.log(usable('Mrs. NoÎlle Noblecourt IV', 'Mrs. NoÎlle Noblecourt'))
 
 var rejects = {
@@ -163,4 +155,4 @@ var rejects = {
 	married: [],
 	initials: []
 }
-doThings();
+extractNameChanges();
