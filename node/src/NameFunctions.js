@@ -827,6 +827,10 @@ Latinise.latin_map={"Á":"A",
 String.prototype.latinise=function(){return this.replace(/[^A-Za-z0-9\[\] ]/g,function(a){return Latinise.latin_map[a]||a})};
 String.prototype.latinize=String.prototype.latinise;
 String.prototype.isLatin=function(){return this==this.latinise()}
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
 
 var honorifics = {
     "Admiral": true,
@@ -1052,10 +1056,25 @@ var honorifics = {
     "Wing Commander": true
 }
 
-String.prototype.isHonorific = () => { return honorifics[this] }
+var postscript = {
+    'Jr' : true,
+    'Jr.' : true,
+    'Sr' : true,
+    'Sr.' : true,
+    'I' : true,
+    'II' : true,
+    'III': true,
+    'IV': true,
+    'V': true
+}
+
+String.prototype.isHonorific = function(){ return honorifics[this] };
+String.prototype.isPostscript = function(){ return postscript[this] };
 module.exports = {
 	latinise: String.prototype.latinise,
 	latinize: String.prototype.latinize,
 	isLatin: String.prototype.isLatin,
-    isHonorific: String.prototype.isHonorific
+    isHonorific: String.prototype.isHonorific,
+    isPostscript: String.prototype.isPostscript,
+    replaceAll: String.prototype.replaceAll
 }
