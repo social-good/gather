@@ -15,7 +15,7 @@ String.prototype.replaceAll = function(search, replacement) {
 
 function getCleanName(fullName) {
 	let names = fullName.split(' ');
-	return `${names[0].toLowerCase().replaceAll('[^A-Za-z]', '')} ${names[names.length-1].toLowerCase().replaceAll('[^A-Za-z]', '')}`
+	return `${names[0].toLowerCase().replaceAll('[.´·-]*', '')} ${names[names.length-1].toLowerCase().replaceAll('[.´·-]*', '')}`
 }
 function convertName(index, fullName) {
 	let names = fullName.split(' ')
@@ -77,45 +77,54 @@ function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 function beginDiasporaRetrieval() {
-	const batchSize = 5000000;
+	const batchSize = 50000000;
 	var year = 1900;
 	unaugmentedNames = {
 		count: 0
 	};
-	for (; year <= 2018 && unaugmentedNames.count < batchSize; year++) { // TODO: Change this back if all 500 don't come back. 
-		if (year % 10 === 0) console.log(year)
-		var yearCredits = creditsMap[`${year}`]
-		if (yearCredits === undefined || yearCredits === null || Object.keys(yearCredits).length === 0) {
-			console.log('Error')
-		} else {
-			var yearMovieIds = Object.keys(yearCredits);
-			for (var j = 0; j < yearMovieIds.length; j++) {
-				var yearMovieCredits = yearCredits[yearMovieIds[j]];
-				var yearMovieCreditsCastIds = Object.keys(yearMovieCredits.cast)
-				var yearMovieCreditsCrewIds = Object.keys(yearMovieCredits.crew)
-				for (var k = 0; k < yearMovieCreditsCastIds.length && unaugmentedNames.count < batchSize; k++) {
-					var name = yearMovieCredits.cast[yearMovieCreditsCastIds[k]].name;
-					if (neverSeenBefore(getCleanName(name)) && legitName(getCleanName(name)))
-					{	unaugmentedNames[getCleanName(yearMovieCredits.cast[yearMovieCreditsCastIds[k]].name)] = true;
-						unaugmentedNames.count += 1;
-					}
-				}
-				for (var k = 0; k < yearMovieCreditsCrewIds.length && unaugmentedNames.count < batchSize; k++) {
-					var name = yearMovieCredits.crew[yearMovieCreditsCrewIds[k]].name;
-					if (neverSeenBefore(getCleanName(name)) && legitName(getCleanName(name)))
-					{	unaugmentedNames[getCleanName(yearMovieCredits.crew[yearMovieCreditsCrewIds[k]].name)] = true;
-						unaugmentedNames.count += 1;
-					}
-				}
-			}
+	// for (; year <= 2018 && unaugmentedNames.count < batchSize; year++) { // TODO: Change this back if all 500 don't come back. 
+	// 	if (year % 10 === 0) console.log(year)
+	// 	var yearCredits = creditsMap[`${year}`]
+	// 	if (yearCredits === undefined || yearCredits === null || Object.keys(yearCredits).length === 0) {
+	// 		console.log('Error')
+	// 	} else {
+	// 		var yearMovieIds = Object.keys(yearCredits);
+	// 		for (var j = 0; j < yearMovieIds.length; j++) {
+	// 			var yearMovieCredits = yearCredits[yearMovieIds[j]];
+	// 			var yearMovieCreditsCastIds = Object.keys(yearMovieCredits.cast)
+	// 			var yearMovieCreditsCrewIds = Object.keys(yearMovieCredits.crew)
+	// 			for (var k = 0; k < yearMovieCreditsCastIds.length && unaugmentedNames.count < batchSize; k++) {
+	// 				var name = yearMovieCredits.cast[yearMovieCreditsCastIds[k]].name;
+	// 				if (neverSeenBefore(getCleanName(name)) && legitName(getCleanName(name)))
+	// 				{	unaugmentedNames[getCleanName(name)] = true;
+	// 					unaugmentedNames.count += 1;
+	// 				}
+	// 			}
+	// 			for (var k = 0; k < yearMovieCreditsCrewIds.length && unaugmentedNames.count < batchSize; k++) {
+	// 				var name = yearMovieCredits.crew[yearMovieCreditsCrewIds[k]].name;
+	// 				if (neverSeenBefore(getCleanName(name)) && legitName(getCleanName(name)))
+	// 				{	unaugmentedNames[getCleanName(name)] = true;
+	// 					unaugmentedNames.count += 1;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	const tmdb_ids = Object.keys(changed_birth_names);
+	for (var i = 0; i < tmdb_ids.length; i++) {
+		if (neverSeenBefore(getCleanName(changed_birth_names[tmdb_ids[i]]))) {
+			unaugmentedNames[getCleanName(changed_birth_names[tmdb_ids[i]])] = true;
+			unaugmentedNames.count += 1;
 		}
 	}
+
 	if (unaugmentedNames.count > 0) {
-		// console.log(unaugmentedNames.count)
+		console.log(unaugmentedNames.count);
 		console.log('Seen before: ' + seenBefore);
 		seenBefore = 0;
 		delete(unaugmentedNames.count);
-		// getDiaspora(Object.keys(unaugmentedNames));
+		getDiaspora(Object.keys(unaugmentedNames));
 		// https://sjfox.github.io/post/world_map_flights/
 	} else {
 		console.log(`unaugmentedNames is empty. Don't risk a call!`)
@@ -253,13 +262,16 @@ function writeAugmentedMapToJSON() {
 var creditsJSON = fs.readFileSync(`${__dirname}/../tmp/centuryTopMovieNames.json`);
 var creditsMap = JSON.parse(creditsJSON);
 
+var changed_birth_names_JSON = fs.readFileSync(`${__dirname}/../tmp/changed_birth_names_changed.json`);
+var changed_birth_names = JSON.parse(changed_birth_names_JSON);
+
 var diasporaMap = {};
 var unaugmentedNames = {
 	count: 0
 };
 var seenBefore = 0;
 
-// beginDiasporaRetrieval()
+beginDiasporaRetrieval()
 // augmentCreditsDiaspora()
 
 

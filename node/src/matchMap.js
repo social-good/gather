@@ -25,12 +25,12 @@ function pairMappingWithNames() {
 }
 
 // void
-function writeToJSON(changed_name_ids) {
-	fs.writeFile(`${__dirname}/../tmp/changed_name_ids.json`, JSON.stringify(changed_name_ids), function(err) {
+function writeToJSON(changed_birth_names_changed) {
+	fs.writeFile(`${__dirname}/../tmp/changed_birth_names_changed.json`, JSON.stringify(changed_birth_names_changed), function(err) {
 		if(err) {
 			return console.log(err);
 		}
-		console.log(`The file was saved to location: ${__dirname}/../tmp/changed_name_ids.json !`);
+		console.log(`The file was saved to location: ${__dirname}/../tmp/changed_birth_names_changed.json !`);
 	});
 }
 
@@ -53,13 +53,13 @@ function extractNameChanges() {
 		nicksDictionary[nicks[i]['fullname']] = nickMapping;
 	}
 	// console.log(nicksDictionary);
-	const usableIds = []
+	var usableIds = {};
 	var unusable = 0;
 	for (var i = 0; i < personIds.length; i++) {
 		if (!usable(persons[personIds[i]].birth_name, persons[personIds[i]].imdb_name, persons[personIds[i]])) 
 			unusable++;
 		else
-			usableIds.push(personIds[i]);
+			usableIds[personIds[i]] = persons[personIds[i]].imdb_name;
 	}
 
 	var samples = {
@@ -157,4 +157,4 @@ var rejects = {
 	married: [],
 	initials: []
 }
-// extractNameChanges();
+extractNameChanges();
