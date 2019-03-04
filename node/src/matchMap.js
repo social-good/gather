@@ -25,12 +25,12 @@ function pairMappingWithNames() {
 }
 
 // void
-function writeToJSON(names_data) {
-	fs.writeFile(`${__dirname}/../tmp/names_data.json`, JSON.stringify(names_data), function(err) {
+function writeToJSON(changed_name_ids) {
+	fs.writeFile(`${__dirname}/../tmp/changed_name_ids.json`, JSON.stringify(changed_name_ids), function(err) {
 		if(err) {
 			return console.log(err);
 		}
-		console.log(`The file was saved to location: ${__dirname}/../tmp/names_data.json !`);
+		console.log(`The file was saved to location: ${__dirname}/../tmp/changed_name_ids.json !`);
 	});
 }
 
@@ -53,11 +53,13 @@ function extractNameChanges() {
 		nicksDictionary[nicks[i]['fullname']] = nickMapping;
 	}
 	// console.log(nicksDictionary);
+	const usableIds = []
 	var unusable = 0;
 	for (var i = 0; i < personIds.length; i++) {
-		if (!usable(persons[personIds[i]].birth_name, persons[personIds[i]].imdb_name, persons[personIds[i]]) ||
-			false) 
+		if (!usable(persons[personIds[i]].birth_name, persons[personIds[i]].imdb_name, persons[personIds[i]])) 
 			unusable++;
+		else
+			usableIds.push(personIds[i]);
 	}
 
 	var samples = {
@@ -73,11 +75,11 @@ function extractNameChanges() {
 		samples.initials.push(rejects.initials[parseInt(Math.random() * rejects.initials.length)]);
 	}
 
-	console.log("Rejects:")
-	console.log(samples);
-	console.log("Approved:")
-	console.log(`${personIds.length - unusable} / ${personIds.length}`);
+	// console.log("Rejects:")
+	// console.log(samples);
+	console.log(`Approved: ${personIds.length - unusable} / ${personIds.length}`);
 	console.log(1 - unusable / personIds.length);
+	writeToJSON(usableIds);
 }
 
 function cleanNameArray(nameList) {
@@ -142,7 +144,7 @@ function usable(birth_name, imdb_name, person) {
 		// Weird dropping of hyphen or something? Only if encounter it...
 	}
 
-	approved.push({birth_name: birth_name, imdb_name: imdb_name});
+	approved.push(person.tmdb_id);
 	return true;
 }
 
@@ -155,4 +157,4 @@ var rejects = {
 	married: [],
 	initials: []
 }
-extractNameChanges();
+// extractNameChanges();

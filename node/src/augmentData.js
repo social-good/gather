@@ -260,7 +260,7 @@ var unaugmentedNames = {
 var seenBefore = 0;
 
 // beginDiasporaRetrieval()
-augmentCreditsDiaspora()
+// augmentCreditsDiaspora()
 
 
 
