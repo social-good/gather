@@ -25,12 +25,12 @@ function pairMappingWithNames() {
 }
 
 // void
-function writeToJSON(changed_birth_names_changed) {
-	fs.writeFile(`${__dirname}/../tmp/changed_birth_names_changed.json`, JSON.stringify(changed_birth_names_changed), function(err) {
+function writeToJSON(usablePeople) {
+	fs.writeFile(`${__dirname}/../tmp/usablePeople.json`, JSON.stringify(usablePeople), function(err) {
 		if(err) {
 			return console.log(err);
 		}
-		console.log(`The file was saved to location: ${__dirname}/../tmp/changed_birth_names_changed.json !`);
+		console.log(`The file was saved to location: ${__dirname}/../tmp/usablePeople.json !`);
 	});
 }
 
@@ -38,6 +38,46 @@ function writeToJSON(changed_birth_names_changed) {
 
 var approved = [];
 var nicksDictionary = {};
+
+function fixNamesData() {
+	var spousesJSON = fs.readFileSync(`${__dirname}/../tmp/spouse_list.json`);
+	var spouses = JSON.parse(spousesJSON);
+	var tmdb_imdb_map_JSON = fs.readFileSync(`${__dirname}/../tmp/tmdb_imdb_mapping.json`);
+	var tmdb_imdb_map = JSON.parse(tmdb_imdb_map_JSON);
+	var tmdb_ids = Object.keys(tmdb_imdb_map);
+	var imdb_tmdb_map = {}
+	
+	// Reverse the map. 
+	for (var i = 0; i < tmdb_ids.length; i++) {
+		imdb_tmdb_map[tmdb_imdb_map[tmdb_ids[i]]] = tmdb_ids[i];
+	}
+
+	// First, fix the spouse data.
+	var spouse_map = {};
+	for (var i = 0; i < spouses.length; i++) {
+		var imdb_page_info = spouses[i];
+		if (imdb_page_info.imdb_id) {
+			delete(imdb_page_info.tmdb_id);
+		}
+		spouse_map[imdb_tmdb_map[imdb_page_info.imdb_id]] = imdb_page_info;
+	}
+	// console.log(spouse_map);
+
+	for (var i = 0; i < tmdb_ids.length; i++) {
+		var person = {};
+		// Because the spouse_map covers a subset of the tmdb_imdb_map
+		if (spouse_map[tmdb_ids[i]]) {
+			person.imdb_name = spouse_map[tmdb_ids[i]].StageName;
+			person.birth_name = spouse_map[tmdb_ids[i]].BirthName;
+			person.imdb_id = tmdb_imdb_map[tmdb_ids[i]];
+			person.spouse_name = spouse_map[tmdb_ids[i]].SpouseName;
+			person.imdb_id_spouse = spouse_map[tmdb_ids[i]].imdb_id_spouse;
+			tmdb_imdb_map[tmdb_ids[i]] = person;
+		}
+	}
+	writeToJSON(tmdb_imdb_map);
+}
+
 function extractNameChanges() {
 	var personJSON = fs.readFileSync(`${__dirname}/../tmp/names_data.json`);
 	var persons = JSON.parse(personJSON);
@@ -53,16 +93,23 @@ function extractNameChanges() {
 		nicksDictionary[nicks[i]['fullname']] = nickMapping;
 	}
 	// console.log(nicksDictionary);
-	var usableIds = {};
+	var usablePeople = {};
 	var unusable = 0;
 	for (var i = 0; i < personIds.length; i++) {
-		if (!usable(persons[personIds[i]].birth_name, persons[personIds[i]].imdb_name, persons[personIds[i]])) 
-			unusable++;
-		else
-			usableIds[personIds[i]] = persons[personIds[i]].imdb_name;
+		try {
+			if (!usable(persons[personIds[i]].birth_name, persons[personIds[i]].imdb_name, persons[personIds[i]])) 
+				unusable++;
+			else
+				usablePeople[personIds[i]] = persons[personIds[i]];
+		} catch (err) {
+			console.error(err)
+			console.log(i);
+		}
+		
 	}
 
 	var samples = {
+		undefined: rejects.undefined,
 		notfound: [],
 		nicknames: [],
 		married: [],
@@ -75,11 +122,11 @@ function extractNameChanges() {
 		samples.initials.push(rejects.initials[parseInt(Math.random() * rejects.initials.length)]);
 	}
 
-	// console.log("Rejects:")
-	// console.log(samples);
+	console.log("Rejects:")
+	console.log(samples);
 	console.log(`Approved: ${personIds.length - unusable} / ${personIds.length}`);
 	console.log(1 - unusable / personIds.length);
-	writeToJSON(usableIds);
+	writeToJSON(usablePeople);
 }
 
 function cleanNameArray(nameList) {
@@ -95,6 +142,11 @@ function cleanNameArray(nameList) {
 
 // This function returns true if the name was legitimately changed! (Pick out all the cases where it shows up as changed, but it's actually just the same name.)
 function usable(birth_name, imdb_name, person) {
+	if (!birth_name || !imdb_name) {
+		rejects.undefined++;
+		return false;
+	}
+
 	var bNames = birth_name.split(' ');
 	var cNames = imdb_name.split(' ');
 
@@ -152,9 +204,11 @@ function usable(birth_name, imdb_name, person) {
 // console.log(usable('Mrs. NoÎlle Noblecourt IV', 'Mrs. NoÎlle Noblecourt'))
 
 var rejects = {
+	undefined: 0,
 	notfound: [],
 	nicknames: [],
 	married: [],
 	initials: []
 }
 extractNameChanges();
+// fixNamesData();

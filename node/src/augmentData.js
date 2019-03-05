@@ -276,6 +276,21 @@ function augmentCreditsDiaspora() {
 	console.log(`Augmented ${added} names. Preparing to write file to JSON...`);
 	writeAugmentedMapToJSON()
 }
+function augmentIDMap() {
+	var suffixes = [];
+	var diritems = fs.readdirSync(`${__dirname}/../tmp/namsor_output`)
+	for (var i = 0; i < diritems.length; i++) {
+		if (diritems[i].substring(0, 16) === 'namsor_diaspora_') {
+			var suffixKey = diritems[i].substring(16);
+			suffixes.push(suffixKey);
+			if (!diasporaMap[suffixKey]) {
+				var diasporaJSON = fs.readFileSync(`${__dirname}/../tmp/namsor_output/${diritems[i]}`);
+				diasporaMap[suffixKey] = JSON.parse(diasporaJSON);
+			}
+		}
+	}
+}
+
 function writeAugmentedMapToJSON() {
 	var date = new Date();
 	fs.writeFile(`${__dirname}/../tmp/diaspora/topCenturyMovies_(double_augmented)_${date.getTime()}.json`, JSON.stringify(creditsMap), function(err) {
@@ -302,7 +317,7 @@ var unaugmentedNames = {
 var seenBefore = 0;
 
 // beginDiasporaRetrieval()
-augmentCreditsDiaspora()
+// augmentCreditsDiaspora()
 
 
 
