@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-const namsor_api_key = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+const namsor_api_key = 'bb3c0daa182f2dc2fd0aadf7ed2742e5';
 
 var currentKeyIndex = 0;
 
@@ -115,10 +115,14 @@ function beginDiasporaRetrieval() {
 	// 	}
 	// }
 
-	const tmdb_ids = Object.keys(changed_birth_names);
+	const tmdb_ids = Object.keys(usablePeople);
 	for (var i = 0; i < tmdb_ids.length; i++) {
-		if (neverSeenBefore(getCleanName(changed_birth_names[tmdb_ids[i]]))) {
-			unaugmentedNames[getCleanName(changed_birth_names[tmdb_ids[i]])] = true;
+		if (neverSeenBefore(getCleanName(usablePeople[tmdb_ids[i]].birth_name))) {
+			unaugmentedNames[getCleanName(usablePeople[tmdb_ids[i]].birth_name)] = true;
+			unaugmentedNames.count += 1;
+		}
+		if (neverSeenBefore(getCleanName(usablePeople[tmdb_ids[i]].imdb_name))) {
+			unaugmentedNames[getCleanName(usablePeople[tmdb_ids[i]].imdb_name)] = true;
 			unaugmentedNames.count += 1;
 		}
 	}
@@ -233,18 +237,20 @@ function augmentCreditsDiaspora() {
 				var yearMovieCreditsCrewIds = Object.keys(yearMovieCredits.crew)
 				for (var k = 0; k < yearMovieCreditsCastIds.length; k++) {
 					var person = yearMovieCredits.cast[yearMovieCreditsCastIds[k]];
-					for (var l = 0; l < suffixes.length; l++) {
-						if (changed_birth_names[person.id]) {
-							if (!person.previous_diaspora && 
-								!person.birth_name &&
-								!person.imdb_name &&
-								diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])] || 
-								diasporaMap[suffixes[l]][oldGetCleanName(changed_birth_names[person.id])]) {
-							
-								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].birth_name = changed_birth_names[person.id];
-								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].imdb_name = changed_birth_names_changed[person.id];
-								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].previous_diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])];
-								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names_changed[person.id])];
+					if (usablePeople[person.id]) {
+						// Poor practice. Adds another n to the runtime...
+						for (var l = 0; l < suffixes.length; l++) {
+							if (diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].birth_name)]) {
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].imdb_id = usablePeople[person.id].imdb_id;
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].birth_name = usablePeople[person.id].birth_name;
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].previous_diaspora = diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].birth_name)];
+								added++;
+							}
+						}
+						for (var l = 0; l < suffixes.length; l++) {
+							if (diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].imdb_name)]) {
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].imdb_name = usablePeople[person.id].imdb_name;
+								creditsMap[`${year}`][yearMovieIds[j]].cast[yearMovieCreditsCastIds[k]].post_diaspora = diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].imdb_name)];
 								added++;
 							}
 						}
@@ -252,18 +258,18 @@ function augmentCreditsDiaspora() {
 				}
 				for (var k = 0; k < yearMovieCreditsCrewIds.length; k++) {
 					var person = yearMovieCredits.crew[yearMovieCreditsCrewIds[k]];
-					for (var l = 0; l < suffixes.length; l++) {
-						if (changed_birth_names[person.id]) {
-							if (!person.previous_diaspora && 
-								!person.birth_name &&
-								!person.imdb_name &&
-								diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])] || 
-								diasporaMap[suffixes[l]][oldGetCleanName(changed_birth_names[person.id])]) {
-
-								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].birth_name = changed_birth_names[person.id];
-								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].imdb_name = changed_birth_names_changed[person.id];
-								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].previous_diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names[person.id])];
-								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].diaspora = diasporaMap[suffixes[l]][getCleanName(changed_birth_names_changed[person.id])];
+					if (usablePeople[person.id]) {
+						for (var l = 0; l < suffixes.length; l++) {
+							if (diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].birth_name)]) {
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].birth_name = usablePeople[person.id].birth_name;
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].previous_diaspora = diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].birth_name)];
+								added++;
+							}
+						}
+						for (var l = 0; l < suffixes.length; l++) {
+							if (diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].imdb_name)]) {
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].imdb_name = usablePeople[person.id].imdb_name;
+								creditsMap[`${year}`][yearMovieIds[j]].crew[yearMovieCreditsCrewIds[k]].post_diaspora = diasporaMap[suffixes[l]][getCleanName(usablePeople[person.id].imdb_name)];
 								added++;
 							}
 						}
@@ -304,11 +310,8 @@ function writeAugmentedMapToJSON() {
 var creditsJSON = fs.readFileSync(`${__dirname}/../tmp/centuryTopMovieNames.json`);
 var creditsMap = JSON.parse(creditsJSON);
 
-var changed_birth_names_JSON = fs.readFileSync(`${__dirname}/../tmp/changed_birth_names.json`);
-var changed_birth_names = JSON.parse(changed_birth_names_JSON);
-
-var changed_birth_names_changed_JSON = fs.readFileSync(`${__dirname}/../tmp/changed_birth_names_changed.json`);
-var changed_birth_names_changed = JSON.parse(changed_birth_names_changed_JSON);
+var usablePeopleJSON = fs.readFileSync(`${__dirname}/../tmp/usablePeople.json`);
+var usablePeople = JSON.parse(usablePeopleJSON);
 
 var diasporaMap = {};
 var unaugmentedNames = {
@@ -317,7 +320,7 @@ var unaugmentedNames = {
 var seenBefore = 0;
 
 // beginDiasporaRetrieval()
-// augmentCreditsDiaspora()
+augmentCreditsDiaspora()
 
 
 
